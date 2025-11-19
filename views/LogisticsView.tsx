@@ -11,10 +11,16 @@ interface LogisticsViewProps {
   orders: Order[];
 }
 
+interface StateMetric {
+  sales: number;
+  cancellations: number;
+  revenue: number;
+}
+
 const LogisticsView: React.FC<LogisticsViewProps> = ({ orders }) => {
   // Aggregate data by state
-  const stateData = useMemo(() => {
-    const data: Record<string, { sales: number; cancellations: number; revenue: number }> = {};
+  const stateData = useMemo<Record<string, StateMetric>>(() => {
+    const data: Record<string, StateMetric> = {};
 
     orders.forEach(order => {
       // Extract state from client_address_state or fallback
@@ -49,9 +55,9 @@ const LogisticsView: React.FC<LogisticsViewProps> = ({ orders }) => {
   });
 
   // Calculate Executive Summary KPIs
-  const totalSales = Object.values(stateData).reduce((acc, curr) => acc + curr.sales, 0);
-  const totalCancellations = Object.values(stateData).reduce((acc, curr) => acc + curr.cancellations, 0);
-  const totalRevenue = Object.values(stateData).reduce((acc, curr) => acc + curr.revenue, 0);
+  const totalSales = Object.values(stateData).reduce((acc: number, curr: StateMetric) => acc + curr.sales, 0);
+  const totalCancellations = Object.values(stateData).reduce((acc: number, curr: StateMetric) => acc + curr.cancellations, 0);
+  const totalRevenue = Object.values(stateData).reduce((acc: number, curr: StateMetric) => acc + curr.revenue, 0);
 
   const topState = Object.entries(stateData).sort((a, b) => b[1].sales - a[1].sales)[0];
   const cancellationRate = totalSales > 0 ? (totalCancellations / (totalSales + totalCancellations)) * 100 : 0;
@@ -147,7 +153,7 @@ const LogisticsView: React.FC<LogisticsViewProps> = ({ orders }) => {
               {Object.entries(stateData)
                 .sort((a, b) => b[1].sales - a[1].sales)
                 .slice(0, 5)
-                .map(([state, metrics], index) => (
+                .map(([state, metrics]: [string, StateMetric], index) => (
                   <div key={state} className="flex items-center gap-4 p-3 hover:bg-slate-50/50 rounded-xl transition-colors">
                     <span className="text-lg font-bold text-slate-400 w-6">#{index + 1}</span>
                     <div className="flex-1">

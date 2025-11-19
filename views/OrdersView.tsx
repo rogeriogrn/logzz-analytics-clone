@@ -61,14 +61,19 @@ const OrdersView: React.FC<OrdersViewProps> = ({ orders: initialOrders, dateRang
 
       const mapped: Order[] = (data || []).map((item: any) => ({
         id: item.id,
+        created_at: item.created_at || new Date().toISOString(),
+        order_number: item.order_number || `ORD-${item.id}`,
         client_name: item.client_name || '',
         client_phone: item.client_phone || '',
         product_name: item.product_name || '',
+        order_quantity: item.order_quantity || 1,
         order_final_price: item.order_final_price || 0,
         commission: item.commission || 0,
         date_order: item.date_order || '',
         date_delivery: item.date_delivery || '',
         order_status: item.order_status || 'Pendente',
+        payment_status: item.payment_status || 'Pending',
+        cod_amount: item.cod_amount || 0,
         notes: item.notes || ''
       }));
 

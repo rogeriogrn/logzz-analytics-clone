@@ -61,7 +61,8 @@ export default function App() {
     // New KPIs
     const averageOrderValue = totalVendas > 0 ? faturamentoReal / totalVendas : 0;
 
-    const deliveredOrders = currentOrders.filter(o => o.order_status === 'Entregue').length;
+    // Updated to include 'Completo' to match DashboardHome logic
+    const deliveredOrders = currentOrders.filter(o => o.order_status === 'Entregue' || o.order_status === 'Completo').length;
     const deliverySuccessRate = totalVendas > 0 ? (deliveredOrders / totalVendas) * 100 : 0;
 
     const kpis: KPIs = {

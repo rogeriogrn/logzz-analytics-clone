@@ -47,7 +47,14 @@ const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave, initia
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave(formData);
+        
+        // Ensure date is ISO format if it comes from the date input (YYYY-MM-DD)
+        const formattedData = { ...formData };
+        if (formattedData.date_delivery && formattedData.date_delivery.length === 10) {
+             formattedData.date_delivery = new Date(formattedData.date_delivery).toISOString();
+        }
+
+        onSave(formattedData);
         onClose();
     };
 
@@ -157,7 +164,7 @@ const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave, initia
                             <select
                                 className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                                 value={formData.payment_status}
-                                onChange={e => setFormData({ ...formData, payment_status: e.target.value as any })}
+                                onChange={e => setFormData({ ...formData, payment_status: e.target.value as Order['payment_status'] })}
                             >
                                 <option value="Pending">Pendente</option>
                                 <option value="Collected">Recebido</option>

@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, Truck, DollarSign,
   User, Filter, Calendar, Search
 } from 'lucide-react';
-import { DashboardData, Order, Region, KPIs, GraphDataPoint } from './types';
+import { DashboardData, Order, Region, KPIs, GraphDataPoint, Expense } from './types';
 import DashboardHome from './views/DashboardHome';
 import OrdersView from './views/OrdersView';
 import LogisticsView from './views/LogisticsView';
@@ -102,7 +102,6 @@ export default function App() {
     const regions = Array.from(regionsMap.values());
 
     // Calculate Graph Data (Sales over time)
-    // Simplified: Group by date_order (day)
     const salesMap = new Map<string, GraphDataPoint>();
     currentOrders.forEach(order => {
       if (!order.date_order) return;
@@ -172,7 +171,6 @@ export default function App() {
         payment_status: 'Pending',
         cod_amount: item.cod_amount,
         notes: item.notes,
-        // Add missing required fields with defaults
         client_zip_code: '',
         client_address: '',
         client_address_number: '',
@@ -201,7 +199,7 @@ export default function App() {
       if (ordersData) {
         const dashboard = calculateDashboardData(ordersData as Order[]);
         // Add expenses to dashboard data
-        dashboard.expenses = expensesData as any[] || [];
+        dashboard.expenses = expensesData as Expense[] || [];
         setDashboardData(dashboard);
       }
 
@@ -232,7 +230,7 @@ export default function App() {
     return matchesDate && matchesSearch;
   });
 
-  const filteredExpenses = (dashboardData?.expenses || []).filter((expense: any) => {
+  const filteredExpenses = (dashboardData?.expenses || []).filter((expense: Expense) => {
     if (!dateRange.start || !dateRange.end) return true;
     const expenseDate = new Date(expense.date).toISOString().split('T')[0];
     const start = new Date(dateRange.start).toISOString().split('T')[0];
@@ -270,7 +268,7 @@ export default function App() {
     }
   };
 
-  const handleAddOrder = async (newOrderData: any) => {
+  const handleAddOrder = async (newOrderData: Partial<Order>) => {
     try {
       const { data, error } = await supabase
         .from('future_deliveries')
@@ -279,7 +277,7 @@ export default function App() {
           client_phone: newOrderData.client_phone,
           product_name: newOrderData.product_name,
           quantity: newOrderData.order_quantity,
-          delivery_date: newOrderData.date_delivery,
+          delivery_date: newOrderData.date_delivery, // Should be ISO string
           cod_amount: newOrderData.cod_amount,
           notes: newOrderData.notes
         }])
@@ -292,11 +290,12 @@ export default function App() {
       }
     } catch (error) {
       console.error('Error adding order:', error);
-      throw error; // Propagate error to UI
+      throw error;
     }
   };
 
-  const handleEditOrder = async (updatedOrder: any) => {
+  const handleEditOrder = async (updatedOrder: Partial<Order>) => {
+    if (!updatedOrder.id) return;
     try {
       const { error } = await supabase
         .from('future_deliveries')
@@ -352,7 +351,7 @@ export default function App() {
     }
   };
 
-  const handleAddExpense = async (newExpense: any) => {
+  const handleAddExpense = async (newExpense: Omit<Expense, 'id' | 'created_at' | 'type'>) => {
     try {
       const { error } = await supabase
         .from('expenses')
@@ -360,7 +359,7 @@ export default function App() {
           description: newExpense.description,
           amount: newExpense.amount,
           category: newExpense.category,
-          date: new Date().toISOString(),
+          date: newExpense.date, // Fixed: Use date from form
           type: 'saida'
         }]);
 
@@ -405,15 +404,9 @@ export default function App() {
 
   const handleCompleteFutureDelivery = async (id: number) => {
     try {
-      // Assuming we update a 'status' field. If the table doesn't have it, we might need to add it or move the order.
-      // Based on the request "atualize o status no Supabase", I'll assume a 'status' column exists or we use 'notes' to mark it?
-      // No, usually a status column. Let's try updating 'status' to 'Entregue'.
-      // However, looking at the mapping, we hardcoded 'Agendado'.
-      // We should probably update the mapping to use the real status if it exists.
-      // For now, I will send the update.
       const { error } = await supabase
         .from('future_deliveries')
-        .update({ status: 'Entregue' }) // Using 'Entregue' to match OrderStatus
+        .update({ status: 'Entregue' })
         .eq('id', id);
 
       if (error) throw error;
@@ -482,8 +475,6 @@ export default function App() {
               </div>
               <span className="font-bold text-xl text-slate-800 tracking-tight">Logzz <span className="text-emerald-500">Analytics</span></span>
             </div>
-
-            {/* Mobile Menu Button could go here */}
           </div>
 
           {/* Global Search Bar */}

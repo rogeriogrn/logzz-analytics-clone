@@ -10,15 +10,14 @@ import Toast, { ToastType } from '../components/Toast';
 interface FutureDeliveriesViewProps {
     orders: Order[];
     onUpdateNote: (orderId: number, note: string) => void;
-    onAddOrder: (newOrder: any) => Promise<void>;
-    onEditOrder: (order: Order) => void;
+    onAddOrder: (newOrder: Partial<Order>) => Promise<void>;
+    onEditOrder: (order: Partial<Order>) => void;
     onDeleteOrder: (id: number) => void;
     onCompleteOrder: (id: number) => void;
     dateRange: { start: string; end: string };
 }
 
 // --- Sub-component: Delivery Card ---
-// Isolated to handle its own local state for immediate feedback
 const DeliveryCard: React.FC<{
     order: Order;
     onEdit: (order: Order) => void;
@@ -32,7 +31,7 @@ const DeliveryCard: React.FC<{
     const [isEditingNote, setIsEditingNote] = useState(false);
     const [noteText, setNoteText] = useState(order.notes || '');
 
-    // Sync local state if prop changes (e.g. after refresh)
+    // Sync local state if prop changes
     useEffect(() => {
         setIsCompletedLocal(order.order_status === 'Entregue' || order.order_status === 'concluido');
     }, [order.order_status]);
@@ -74,7 +73,7 @@ const DeliveryCard: React.FC<{
                         </div>
                         <div className={`mt-3 flex items-center gap-2 px-3 py-1.5 rounded-lg w-fit border ${isCompletedLocal ? 'text-emerald-700 bg-emerald-100 border-emerald-200' : 'text-emerald-600 bg-emerald-50/50 border-emerald-100'}`}>
                             <Clock size={16} />
-                            <span className="font-bold text-sm">Previsão: {formatDate(order.date_delivery)}</span>
+                            <span className="font-bold text-sm">Previsão: {formatDate(order.date_delivery ? new Date(order.date_delivery).getTime() / 1000 : 0)}</span>
                         </div>
                     </div>
                 </div>
@@ -274,33 +273,15 @@ const FutureDeliveriesView: React.FC<FutureDeliveriesViewProps> = ({
                 order_quantity: Number(formData.order_quantity),
                 date_delivery: new Date(formData.date_delivery).toISOString(),
                 cod_amount: Number(formData.cod_amount),
-                notes: formData.notes
+                notes: formData.notes,
+                id: currentOrderId || undefined
             };
 
             if (isEditingOrder && currentOrderId) {
-                const existingOrder = orders.find(o => o.id === currentOrderId);
-                if (existingOrder) {
-                    onEditOrder({ ...existingOrder, ...orderData });
-                    showToast('Agendamento atualizado!', 'success');
-                }
+                onEditOrder(orderData);
+                showToast('Agendamento atualizado!', 'success');
             } else {
-                await onAddOrder({
-                    ...orderData,
-                    order_final_price: orderData.cod_amount,
-                    // Defaults
-                    client_email: '',
-                    client_document: '',
-                    client_zip_code: '',
-                    client_address: '',
-                    client_address_number: '',
-                    client_address_district: '',
-                    client_address_city: '',
-                    client_address_state: '',
-                    client_address_comp: '',
-                    product_code: 'MANUAL',
-                    logistic_operator: 'Manual',
-                    delivery_man: 'Manual'
-                });
+                await onAddOrder(orderData);
                 showToast('Entrega agendada!', 'success');
             }
             setIsModalOpen(false);
@@ -389,7 +370,7 @@ const FutureDeliveriesView: React.FC<FutureDeliveriesViewProps> = ({
                                 </button>
                             </div>
                             <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                                {/* Form fields... simplified for brevity but keeping structure */}
+                                {/* Form fields */}
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Nome do Cliente *</label>
                                     <input
@@ -543,4 +524,3 @@ const FutureDeliveriesView: React.FC<FutureDeliveriesViewProps> = ({
 };
 
 export default FutureDeliveriesView;
-

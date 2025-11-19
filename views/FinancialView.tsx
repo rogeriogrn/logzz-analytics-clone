@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { Plus, TrendingUp, TrendingDown, Wallet, ArrowDownRight, Trash2, ArrowUpRight, DollarSign, CreditCard } from 'lucide-react';
-import { DashboardData, Expense, Order } from '../types';
-import { theme } from '../constants';
+import { DashboardData, Expense } from '../types';
 import { formatCurrency } from '../utils/formatters';
 import GlassCard from '../components/GlassCard';
 import PageTransition from '../components/PageTransition';
 
 interface FinancialViewProps {
   data: DashboardData;
-  onAddExpense: (expense: any) => void;
+  onAddExpense: (expense: Omit<Expense, 'id' | 'created_at' | 'type'>) => void;
   onDeleteExpense: (id: number) => void;
 }
 
@@ -36,7 +35,7 @@ const FinancialView: React.FC<FinancialViewProps> = ({ data, onAddExpense, onDel
     ...data.expenses.map(e => ({
       id: `exp-${e.id}`,
       originalId: e.id,
-      type: 'expense',
+      type: 'expense' as const,
       description: e.description,
       amount: Number(e.amount),
       date: new Date(e.date),
@@ -45,10 +44,10 @@ const FinancialView: React.FC<FinancialViewProps> = ({ data, onAddExpense, onDel
     ...collectedOrders.map(o => ({
       id: `inc-${o.id}`,
       originalId: o.id,
-      type: 'income',
+      type: 'income' as const,
       description: `Comissão #${o.order_number || o.id}`,
       amount: Number(o.commission),
-      date: new Date(o.date_delivery || o.date_order || o.created_at), // Use delivery date for income if possible
+      date: new Date(o.date_delivery || o.date_order || o.created_at),
       category: 'Venda'
     }))
   ].sort((a, b) => b.date.getTime() - a.date.getTime());

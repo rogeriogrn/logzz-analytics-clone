@@ -1,9 +1,8 @@
 import React, { useMemo } from 'react';
 import { Chart } from 'react-google-charts';
 import { Order } from '../types';
-import { theme } from '../constants';
 import { formatCurrency } from '../utils/formatters';
-import { TrendingUp, TrendingDown, Package, AlertCircle, DollarSign } from 'lucide-react';
+import { TrendingUp, Package, AlertCircle, DollarSign } from 'lucide-react';
 import GlassCard from '../components/GlassCard';
 import PageTransition from '../components/PageTransition';
 
@@ -24,7 +23,6 @@ const LogisticsView: React.FC<LogisticsViewProps> = ({ orders }) => {
 
     orders.forEach(order => {
       // Extract state from client_address_state or fallback
-      // Assuming client_address_state is the 2-letter code like 'SP', 'RJ'
       const state = order.client_address_state?.toUpperCase() || 'OUTROS';
 
       if (!data[state]) {
@@ -47,19 +45,24 @@ const LogisticsView: React.FC<LogisticsViewProps> = ({ orders }) => {
   }, [orders]);
 
   // Prepare data for Google Charts
-  const chartData = [['State', 'Vendas', 'Cancelamentos']];
-  Object.entries(stateData).forEach(([state, metrics]) => {
+  const chartData: (string | number)[][] = [['State', 'Vendas', 'Cancelamentos']];
+  const entries = Object.entries(stateData) as [string, StateMetric][];
+  
+  entries.forEach(([state, metrics]) => {
     if (state !== 'OUTROS') {
       chartData.push([`BR-${state}`, metrics.sales, metrics.cancellations]);
     }
   });
 
   // Calculate Executive Summary KPIs
-  const totalSales = Object.values(stateData).reduce((acc: number, curr: StateMetric) => acc + curr.sales, 0);
-  const totalCancellations = Object.values(stateData).reduce((acc: number, curr: StateMetric) => acc + curr.cancellations, 0);
-  const totalRevenue = Object.values(stateData).reduce((acc: number, curr: StateMetric) => acc + curr.revenue, 0);
+  const metricsList = Object.values(stateData) as StateMetric[];
+  const totalSales = metricsList.reduce((acc, curr) => acc + curr.sales, 0);
+  const totalCancellations = metricsList.reduce((acc, curr) => acc + curr.cancellations, 0);
+  const totalRevenue = metricsList.reduce((acc, curr) => acc + curr.revenue, 0);
 
-  const topState = Object.entries(stateData).sort((a, b) => b[1].sales - a[1].sales)[0];
+  const sortedEntries = [...entries].sort((a, b) => b[1].sales - a[1].sales);
+  const topStateEntry = sortedEntries.length > 0 ? sortedEntries[0] : null;
+  
   const cancellationRate = totalSales > 0 ? (totalCancellations / (totalSales + totalCancellations)) * 100 : 0;
   const averageTicket = totalSales > 0 ? totalRevenue / totalSales : 0;
 
@@ -106,7 +109,7 @@ const LogisticsView: React.FC<LogisticsViewProps> = ({ orders }) => {
               <span className="text-sm font-medium text-slate-500 font-display">Top Estado</span>
             </div>
             <h3 className="text-2xl font-bold text-slate-800 font-display">
-              {topState ? `${topState[0]} - ${topState[1].sales}` : '-'}
+              {topStateEntry ? `${topStateEntry[0]} - ${topStateEntry[1].sales}` : '-'}
             </h3>
           </GlassCard>
 
@@ -150,12 +153,11 @@ const LogisticsView: React.FC<LogisticsViewProps> = ({ orders }) => {
           <GlassCard className="p-6">
             <h3 className="text-lg font-bold text-slate-800 mb-6 font-display">Top 5 Estados</h3>
             <div className="space-y-4">
-              {Object.entries(stateData)
-                .sort((a, b) => b[1].sales - a[1].sales)
+              {sortedEntries
                 .slice(0, 5)
-                .map(([state, metrics]: [string, StateMetric], index) => (
+                .map(([state, metrics]) => (
                   <div key={state} className="flex items-center gap-4 p-3 hover:bg-slate-50/50 rounded-xl transition-colors">
-                    <span className="text-lg font-bold text-slate-400 w-6">#{index + 1}</span>
+                    <span className="text-lg font-bold text-slate-400 w-6">#{sortedEntries.findIndex(e => e[0] === state) + 1}</span>
                     <div className="flex-1">
                       <div className="flex justify-between mb-1">
                         <span className="font-bold text-slate-700">{state}</span>
@@ -164,7 +166,7 @@ const LogisticsView: React.FC<LogisticsViewProps> = ({ orders }) => {
                       <div className="w-full bg-slate-100 rounded-full h-2">
                         <div
                           className="bg-emerald-500 h-2 rounded-full transition-all duration-1000"
-                          style={{ width: `${(metrics.sales / totalSales) * 100}%` }}
+                          style={{ width: `${totalSales > 0 ? (metrics.sales / totalSales) * 100 : 0}%` }}
                         ></div>
                       </div>
                     </div>
